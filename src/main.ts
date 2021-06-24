@@ -2,4 +2,4 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import './registerServiceWorker'
 
-createApp(App).mount('#app')
+(<any>window).app = createApp(App).mount('#app')

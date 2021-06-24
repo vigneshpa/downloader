@@ -5,19 +5,43 @@
     - n--;
     .bubble
 #app
-  .headder I Encoder
+  .headder Downloader
   .content
-    .orginal
-      h4 Content
+    .geturl
+      h4 Video url
+      input(type="url", v-model="url", placeholder="Video URL")
+      iframe#ytplayer(
+        type="text/html",
+        v-if="videoUrl",
+        :src="videoUrl",
+        frameborder="0"
+      )
+    .options
+      h4 Download options
+      h2 info
+      | {{ videoInfo }}
+    .output
+      video.videojs(ref="videoPlayer", controls, vjs-default-skin, width="500")
   .footer
     p
-      | Footer here
+      | Built with
+      |
+      a(href="https://www.npmjs.com/package/ytdl-core", target="_blank") ytdl-core
 </template>
 
 <style lang="scss">
 @import "@/assets/bubbles.scss";
 $minWidth: calc(100vmin - 60px);
 $width: calc(60vmin + 100px);
+$videoHeight: calc(50vmin - 30px);
+input[type="text"] {
+  font: 15px/24px "Lato", Arial, sans-serif;
+  color: #333;
+  width: 100%;
+  box-sizing: border-box;
+  letter-spacing: 1px;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -25,10 +49,15 @@ $width: calc(60vmin + 100px);
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  :focus {
+    outline: none;
+  }
   .content {
     display: flex;
     flex-direction: column;
-    div {
+    .geturl,
+    .output,
+    .options {
       transition: all ease 0.3s;
       margin: 1vmin auto 1vmin auto;
       background-color: rgba(236, 236, 236, 0.856);
@@ -37,11 +66,23 @@ $width: calc(60vmin + 100px);
       padding: 20px;
       border-radius: 2vmin;
       box-shadow: grey 0px 0px 0.7vmin;
-      video {
+      overflow: hidden;
+      video,
+      iframe {
         width: $width;
         min-width: $minWidth;
+        height: $videoHeight;
       }
-      overflow: hidden;
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px;
+        outline: none;
+        border: none;
+        :focus {
+          border: solid 2px black;
+        }
+      }
     }
     button {
       padding: 10px;
@@ -65,12 +106,59 @@ $width: calc(60vmin + 100px);
 </style>
 
 <script lang="ts">
-import { computed, defineComponent, ref } from "vue";
+import { computed, defineComponent, Ref, ref } from "vue";
+import videojs, { VideoJsPlayer } from "video.js";
+import "video.js/dist/video-js.css";
+import ytdl from "ytdl-core";
 
 export default defineComponent({
   name: "App",
   setup() {
-    return {};
+    const url = ref("");
+    let player = ref(null as unknown as Ref<VideoJsPlayer>);
+
+    const parseVideoId = (url:string) => {
+      let regExp =
+        /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+      let match = url.match(regExp);
+      return match && match[7].length == 11 ? match[7] : "";
+    };
+
+    const videoUrl = computed(()=>{
+      if(!url)return "";
+      const videoId = parseVideoId(url.value);
+      if(!videoId) return "";
+      return `https://www.youtube.com/embed/${videoId}?origin=http://localhost`;
+    });
+
+    // const strm = computed(() => {
+    //   return ytdl(url.value);
+    // });
+
+    const videoInfo = computed(async () => {
+      if(!videoUrl.value)return "Select a video";
+      const ret = await ytdl.getInfo(videoUrl.value);
+      console.log(ret);
+      alert(ret);
+      return ret;
+    });
+
+    return { url, player, videoUrl, videoInfo };
   },
+  // mounted() {
+  //       this.player = videojs(this.$refs.videoPlayer as string, {
+  //         techOrder:["youtube"],
+  //         sources:[
+  //           {type:"video/mp4", src:this.url}
+  //         ]
+  //       }, function onPlayerReady() {
+  //           console.log('onPlayerReady');
+  //       })
+  //   },
+  //   beforeDestroy() {
+  //       if (this.player) {
+  //           this.player.dispose()
+  //       }
+  //   }
 });
 </script>
